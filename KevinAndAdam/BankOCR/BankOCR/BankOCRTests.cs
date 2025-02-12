@@ -2,7 +2,7 @@ using System.Text;
 
 namespace BankOCR;
 
-public class BankAccountNumberParser
+public record BankAccountNumber(string AccountNumber)
 {
     private static Dictionary<string, string> _numbers = new()
     {
@@ -88,7 +88,19 @@ public class BankAccountNumberParser
         }
     };
 
-    public static string Parse(string text)
+    public bool IsValidate()
+    {
+        var total = AccountNumber
+            .ToCharArray()
+            .Select(x => (int)char.GetNumericValue(x))
+            .Reverse()
+            .Select((number, index) => number * (index + 1))
+            .Sum();
+
+        return total % 11 == 0;
+    }
+    
+    public static BankAccountNumber Parse(string text)
     {
         var lines = text.Split(Environment.NewLine)
             .Take(3)
@@ -102,10 +114,24 @@ public class BankAccountNumberParser
             var line3 = lines[2].Substring(i, 3);
             var singleChar = string.Join(Environment.NewLine, line1, line2, line3);
 
-            parsed.Append(_numbers[singleChar]);
+            parsed.Append(_numbers.GetValueOrDefault(singleChar, "?"));
         }
 
-        return parsed.ToString();
+        return new(parsed.ToString());
+    }
+
+    public string ToResult()
+    {
+        if (AccountNumber.Contains("?"))
+        {
+            return AccountNumber + " ILL";
+        }
+        if (!IsValidate())
+        {
+            return AccountNumber + " ERR";
+        }
+
+        return AccountNumber;
     }
 }
 
@@ -210,9 +236,9 @@ public class BankOCRTests
     [MemberData(nameof(SingleCharData))]
     public void ShouldParseSingleChar(string text, string expectation)
     {
-        var account = BankAccountNumberParser.Parse(text);
+        var account = BankAccountNumber.Parse(text);
 
-        Assert.Equal(expectation, account);
+        Assert.Equal(expectation, account.AccountNumber);
     }
 
     public static TheoryData<string, string> MultipleCharData =>
@@ -242,19 +268,29 @@ public class BankOCRTests
     [MemberData(nameof(MultipleCharData))]
     public void ShouldParseMultipleChar(string text, string expectation)
     {
-        var account = BankAccountNumberParser.Parse(text);
+        var account = BankAccountNumber.Parse(text);
 
-        Assert.Equal(expectation, account);
+        Assert.Equal(expectation, account.AccountNumber);
     }
-}
+    
+    [Fact]
+    public void ShouldParseInvalidCharsAsQuestionMark()
+    {
+        var text = """
+                       _  _     _  _  _  _  _ 
+                     | _| _||_| _||_   ||_||_|
+                     ||_  _|  | _||_|  ||_| _ 
+                   """;
+        var account = BankAccountNumber.Parse(text);
 
-public class BankAccountValidatorTests
-{
+        Assert.Equal("12343678?", account.AccountNumber);
+    }
+    
     [Fact]
     public void ShouldValidateAccountNumber()
     {
-        var account = "345882865";
-        var isValid = BankAccountValidator.Validate(account);
+        var account = new BankAccountNumber("345882865");
+        var isValid = account.IsValidate();
 
         Assert.True(isValid);
     }
@@ -262,24 +298,25 @@ public class BankAccountValidatorTests
     [Fact]
     public void ShouldValidateAccountNumberAndFail()
     {
-        var account = "223456789";
-        var isValid = BankAccountValidator.Validate(account);
+        var account = new BankAccountNumber("223456789");
+        var isValid = account.IsValidate();
 
         Assert.False(isValid);
     }
-}
 
-public class BankAccountValidator
-{
-    public static bool Validate(string account)
+    [Fact]
+    public void ShouldOutputResultWithErrorIfChecksumDoesNotMatch()
     {
-        var total = account
-            .ToCharArray()
-            .Select(x => (int)char.GetNumericValue(x))
-            .Reverse()
-            .Select((number, index) => number * (index + 1))
-            .Sum();
-
-        return total % 11 == 0;
+        var account = new BankAccountNumber("223456789");
+        
+        Assert.Equal("223456789 ERR", account.ToResult());
+    }
+    
+    [Fact]
+    public void ShouldOutputResultWithInvalidForInvalidChar()
+    {
+        var account = new BankAccountNumber("2234?6789");
+        
+        Assert.Equal("2234?6789 ILL", account.ToResult());
     }
 }
