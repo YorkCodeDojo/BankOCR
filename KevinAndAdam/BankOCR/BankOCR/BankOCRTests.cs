@@ -247,3 +247,39 @@ public class BankOCRTests
         Assert.Equal(expectation, account);
     }
 }
+
+public class BankAccountValidatorTests
+{
+    [Fact]
+    public void ShouldValidateAccountNumber()
+    {
+        var account = "345882865";
+        var isValid = BankAccountValidator.Validate(account);
+
+        Assert.True(isValid);
+    }
+
+    [Fact]
+    public void ShouldValidateAccountNumberAndFail()
+    {
+        var account = "223456789";
+        var isValid = BankAccountValidator.Validate(account);
+
+        Assert.False(isValid);
+    }
+}
+
+public class BankAccountValidator
+{
+    public static bool Validate(string account)
+    {
+        var total = account
+            .ToCharArray()
+            .Select(x => (int)char.GetNumericValue(x))
+            .Reverse()
+            .Select((number, index) => number * (index + 1))
+            .Sum();
+
+        return total % 11 == 0;
+    }
+}
