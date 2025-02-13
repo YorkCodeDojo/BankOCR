@@ -3,29 +3,26 @@ package org.yorkdevelopers
 typealias CharResults = Pair<String, Array<String>>
 class AccountNumberParser {
 
-    fun parseChar(input: String) : String = parseCharResults(input, false).first
+    fun parseChar(input: String) : String = parseCharResults(input.filterNot { it == '\n' }, false).first
 
     fun parseCharResults(input: String, recursed: Boolean = false): CharResults {
         return when (input) {
-            "   \n  |\n  |" -> CharResults("1", AccountNumberProcessor.convertNumbers("1"))
-            " _ \n _|\n|_ " -> CharResults("2", AccountNumberProcessor.convertNumbers("2"))
-            " _ \n _|\n _|" -> CharResults("3", AccountNumberProcessor.convertNumbers("3"))
-            "   \n|_|\n  |" -> CharResults("4", AccountNumberProcessor.convertNumbers("4"))
-            " _ \n|_ \n _|" -> CharResults("5", AccountNumberProcessor.convertNumbers("5"))
-            " _ \n|_ \n|_|" -> CharResults("6", AccountNumberProcessor.convertNumbers("6"))
-            " _ \n  |\n  |" -> CharResults("7", AccountNumberProcessor.convertNumbers("7"))
-            " _ \n|_|\n|_|" -> CharResults("8", AccountNumberProcessor.convertNumbers("8"))
-            " _ \n|_|\n _|" -> CharResults("9", AccountNumberProcessor.convertNumbers("9"))
-            " _ \n| |\n|_|" -> CharResults("0", AccountNumberProcessor.convertNumbers("0"))
+            "     |  |" -> CharResults("1", AccountNumberProcessor.convertNumbers("1"))
+            " _  _||_ " -> CharResults("2", AccountNumberProcessor.convertNumbers("2"))
+            " _  _| _|" -> CharResults("3", AccountNumberProcessor.convertNumbers("3"))
+            "   |_|  |" -> CharResults("4", AccountNumberProcessor.convertNumbers("4"))
+            " _ |_  _|" -> CharResults("5", AccountNumberProcessor.convertNumbers("5"))
+            " _ |_ |_|" -> CharResults("6", AccountNumberProcessor.convertNumbers("6"))
+            " _   |  |" -> CharResults("7", AccountNumberProcessor.convertNumbers("7"))
+            " _ |_||_|" -> CharResults("8", AccountNumberProcessor.convertNumbers("8"))
+            " _ |_| _|" -> CharResults("9", AccountNumberProcessor.convertNumbers("9"))
+            " _ | ||_|" -> CharResults("0", AccountNumberProcessor.convertNumbers("0"))
             else -> {
                 if (recursed) {
                     CharResults("?", arrayOf())
                 } else {
                     val possibleAlternatives = mutableListOf<String>()
                     for (i in input.indices) {
-                        if (input[i] == '\n') {
-                            continue
-                        }
                         for (j in 0 until 3) {
                             val newChar = when (j) {
                                 0 -> '|'
@@ -53,16 +50,16 @@ class AccountNumberParser {
             .reduce(String::plus)
     }
 
-    fun parseAccountNumber(input: String): List<CharResults> {
-        val size = input.indexOfFirst { it == '\n' } / 3
+    fun parseAccountNumber(rawInput: String): List<CharResults> {
+        val input = rawInput.filterNot { it == '\n' }
+        val size = input.length / 9
         return input
-            .filterNot { it == '\n' }
             .chunked(3)
             .foldIndexed(MutableList(size) { "" }) { index, acc, chunk ->
-                acc[index % acc.size] = "${acc[index % acc.size]}$chunk\n"
+                acc[index % acc.size] = "${acc[index % acc.size]}$chunk"
                 acc
             }
-            .map { parseCharResults(it.trimEnd('\n')) }
+            .map { parseCharResults(it) }
     }
 }
 
