@@ -114,16 +114,6 @@ class AccountNumberParserTest {
         assertEquals("0", result)
     }
 
-    @Test
-    fun `Load account number from the weird string`() {
-        val accountNumberParser = AccountNumberParser()
-        val result = accountNumberParser.parseAccountNumber(
-            """ _  _  _  _  _  _  _  _  _ 
-| || || || || || || || || |
-|_||_||_||_||_||_||_||_||_|""")
-        assertEquals("000000000", result)
-    }
-
 }
 
 

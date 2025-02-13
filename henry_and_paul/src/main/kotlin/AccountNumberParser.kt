@@ -18,7 +18,7 @@ class AccountNumberParser {
     }
 
     fun parseAccountNumber(input: String): String {
-        val size = input.indexOfFirst{ it == '\n' } / 3
+        val size = input.indexOfFirst { it == '\n' } / 3
         return input
             .filterNot { it == '\n' }
             .chunked(3)
@@ -28,5 +28,14 @@ class AccountNumberParser {
             }
             .map { parseChar(it.trimEnd('\n')) }
             .reduce(String::plus)
+    }
+}
+
+object AccountNumberValidator {
+    fun validate(accountNumber: String): Boolean {
+        val foldRightIndexed = accountNumber.reversed().foldRightIndexed(0) { index, char, acc ->
+            acc + (index + 1) * char.digitToInt()
+        }
+        return foldRightIndexed % 11 == 0
     }
 }
