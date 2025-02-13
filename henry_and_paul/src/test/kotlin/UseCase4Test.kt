@@ -35,37 +35,34 @@ class UseCase4Test {
         assertEquals("200800000", result)
     }
 
-    // Changed the order of the results as the calculator came back with the same answers in a different order
     @Test
-    fun `invalid 888888888 replaced with AMB ('888886888'', '888888988', '888888880')`() {
+    fun `invalid 888888888 replaced with AMB ('888886888', '888888880', '888888988')`() {
         val result = AccountNumberProcessor.process(
             """ _  _  _  _  _  _  _  _  _ 
 |_||_||_||_||_||_||_||_||_|
 |_||_||_||_||_||_||_||_||_|"""
         )
-        assertEquals("888888888 AMB ['888886888', '888888988', '888888880']", result)
+        assertEquals("888888888 AMB ['888886888', '888888880', '888888988']", result)
     }
 
-    // Changed the order of the results as the calculator came back with the same answers in a different order
     @Test
-    fun `invalid 555555555 replaced with AMB ('559555555', '555655555')`() {
+    fun `invalid 555555555 replaced with AMB ('555655555', '559555555')`() {
         val result = AccountNumberProcessor.process(
             """ _  _  _  _  _  _  _  _  _ 
 |_ |_ |_ |_ |_ |_ |_ |_ |_ 
  _| _| _| _| _| _| _| _| _|"""
         )
-        assertEquals("555555555 AMB ['559555555', '555655555']", result)
+        assertEquals("555555555 AMB ['555655555', '559555555']", result)
     }
 
-    // Changed the order of the results as the calculator came back with the same answers in a different order
     @Test
-    fun `invalid 666666666 replaced with AMB ('686666666', '666566666')`() {
+    fun `invalid 666666666 replaced with AMB ('666566666', '686666666')`() {
         val result = AccountNumberProcessor.process(
             """ _  _  _  _  _  _  _  _  _ 
 |_ |_ |_ |_ |_ |_ |_ |_ |_ 
 |_||_||_||_||_||_||_||_||_|"""
         )
-        assertEquals("666666666 AMB ['686666666', '666566666']", result)
+        assertEquals("666666666 AMB ['666566666', '686666666']", result)
     }
 
     @Test
@@ -78,15 +75,14 @@ class UseCase4Test {
         assertEquals("999999999 AMB ['899999999', '993999999', '999959999']", result)
     }
 
-    // Changed the order of the results as the calculator came back with the same answers in a different order
     @Test
-    fun `invalid 490067715 replaced with AMB ('490867715', '490067115', '490067719')`() {
+    fun `invalid 490067715 replaced with AMB ('490067115', '490067719', '490867715')`() {
         val result = AccountNumberProcessor.process(
             """    _  _  _  _  _  _     _ 
 |_||_|| || ||_   |  |  ||_ 
   | _||_||_||_|  |  |  | _|"""
         )
-        assertEquals("490067715 AMB ['490867715', '490067115', '490067719']", result)
+        assertEquals("490067715 AMB ['490067115', '490067719', '490867715']", result)
     }
 
     @Test

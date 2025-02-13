@@ -94,7 +94,7 @@ object AccountNumberProcessor {
                 } else if (validAlternatives.size == 1) {
                     validAlternatives.first()
                 } else {
-                    "$parsedAccount AMB [${validAlternatives.joinToString(", ") { "'$it'" }}]"
+                    "$parsedAccount AMB [${validAlternatives.sorted().joinToString(", ") { "'$it'" }}]"
                 }
             }
         }
