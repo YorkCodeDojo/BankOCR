@@ -13,7 +13,7 @@ class AccountNumberParser {
             " _ \n|_|\n|_|" -> "8"
             " _ \n|_|\n _|" -> "9"
             " _ \n| |\n|_|" -> "0"
-            else -> throw IllegalArgumentException("Unknown input \n$input")
+            else -> "?"
         }
     }
 
@@ -37,5 +37,19 @@ object AccountNumberValidator {
             acc + (index + 1) * char.digitToInt()
         }
         return foldRightIndexed % 11 == 0
+    }
+}
+
+object AccountNumberProcessor {
+    fun process(accountNumber: String): String {
+        val parsedAccount = AccountNumberParser().parseAccountNumber(accountNumber)
+
+        return if (parsedAccount.contains("?")) {
+            "$parsedAccount ILL"
+        } else if (!AccountNumberValidator.validate(parsedAccount)) {
+            "$parsedAccount ERR"
+        } else {
+            parsedAccount
+        }
     }
 }
