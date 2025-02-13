@@ -107,7 +107,7 @@ class AccountNumberParserTest {
     @Test
     fun `Load single zero account number from the weird string`() {
         val accountNumberParser = AccountNumberParser()
-        val result = accountNumberParser.parseAccountNumber(
+        val result = accountNumberParser.parseAccountNumberToString(
             """ _ 
 | |
 |_|""")
