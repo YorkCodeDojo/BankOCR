@@ -2,9 +2,41 @@ using System.Text;
 
 namespace BankOCR;
 
-public record BankAccountNumber(string AccountNumber)
+public record Digit(string RawString)
 {
-    private static Dictionary<string, string> _numbers = new()
+    public char Value =>
+        _numbers.GetValueOrDefault(RawString, '?');
+
+    public IReadOnlyList<char> PossibleValues
+    {
+        get
+        {
+            var values = new List<char>();
+            foreach (var (key, va) in _numbers)
+            {
+                var count = RawString.Zip(key, (a, b) => (a, b))
+                    .Count(x => x.a != x.b);
+
+                if (count <= 1)
+                {
+                    values.Add(va);
+                }
+            }
+
+            return values;
+        }
+    }
+
+
+    public static IReadOnlyList<Digit> FromRawString(string input)
+    {
+        var map = _numbers.ToDictionary(x => x.Value, pair => pair.Key);
+       
+        return input.Select(x => new Digit(map.GetValueOrDefault(x, "?")))
+            .ToArray();
+    }
+
+    private static Dictionary<string, char> _numbers = new()
     {
         {
             """
@@ -12,7 +44,7 @@ public record BankAccountNumber(string AccountNumber)
               |
               |
             """,
-            "1"
+            '1'
         },
         {
             """
@@ -20,7 +52,7 @@ public record BankAccountNumber(string AccountNumber)
              _|
             |_ 
             """,
-            "2"
+            '2'
         },
         {
             """
@@ -28,7 +60,7 @@ public record BankAccountNumber(string AccountNumber)
              _|
              _|
             """,
-            "3"
+            '3'
         },
         {
             """
@@ -36,7 +68,7 @@ public record BankAccountNumber(string AccountNumber)
             |_|
               |
             """,
-            "4"
+            '4'
         },
         {
             """
@@ -44,7 +76,7 @@ public record BankAccountNumber(string AccountNumber)
             |_ 
              _|
             """,
-            "5"
+            '5'
         },
         {
             """
@@ -52,7 +84,7 @@ public record BankAccountNumber(string AccountNumber)
             |_ 
             |_|
             """,
-            "6"
+            '6'
         },
         {
             """
@@ -60,7 +92,7 @@ public record BankAccountNumber(string AccountNumber)
               |
               |
             """,
-            "7"
+            '7'
         },
         {
             """
@@ -68,7 +100,7 @@ public record BankAccountNumber(string AccountNumber)
             |_|
             |_|
             """,
-            "8"
+            '8'
         },
         {
             """
@@ -76,7 +108,7 @@ public record BankAccountNumber(string AccountNumber)
             |_|
              _|
             """,
-            "9"
+            '9'
         },
         {
             """
@@ -84,14 +116,19 @@ public record BankAccountNumber(string AccountNumber)
             | |
             |_|
             """,
-            "0"
+            '0'
         }
     };
 
+    public bool Invalid() => RawString.Contains('?');
+}
+
+public record BankAccountNumber(IReadOnlyList<Digit> AccountNumber)
+{
     public bool IsValidate()
     {
         var total = AccountNumber
-            .ToCharArray()
+            .Select(x => x.Value)
             .Select(x => (int)char.GetNumericValue(x))
             .Reverse()
             .Select((number, index) => number * (index + 1))
@@ -99,14 +136,14 @@ public record BankAccountNumber(string AccountNumber)
 
         return total % 11 == 0;
     }
-    
+
     public static BankAccountNumber Parse(string text)
     {
         var lines = text.Split(Environment.NewLine)
             .Take(3)
             .ToArray();
 
-        StringBuilder parsed = new();
+        List<Digit> parsed = new();
         for (var i = 0; i < lines[0].Length; i += 3)
         {
             var line1 = lines[0].Substring(i, 3);
@@ -114,24 +151,28 @@ public record BankAccountNumber(string AccountNumber)
             var line3 = lines[2].Substring(i, 3);
             var singleChar = string.Join(Environment.NewLine, line1, line2, line3);
 
-            parsed.Append(_numbers.GetValueOrDefault(singleChar, "?"));
+            parsed.Add(new Digit(singleChar));
         }
 
-        return new(parsed.ToString());
+        return new(parsed);
     }
+
+    public string ToAccountNumberString() =>
+        string.Join("", AccountNumber.Select(x => x.Value));
 
     public string ToResult()
     {
-        if (AccountNumber.Contains("?"))
+        if (AccountNumber.Any(x => x.Invalid()))
         {
-            return AccountNumber + " ILL";
-        }
-        if (!IsValidate())
-        {
-            return AccountNumber + " ERR";
+            return ToAccountNumberString() + " ILL";
         }
 
-        return AccountNumber;
+        if (!IsValidate())
+        {
+            return ToAccountNumberString() + " ERR";
+        }
+
+        return ToAccountNumberString();
     }
 }
 
@@ -238,7 +279,7 @@ public class BankOCRTests
     {
         var account = BankAccountNumber.Parse(text);
 
-        Assert.Equal(expectation, account.AccountNumber);
+        Assert.Equal(expectation, account.ToAccountNumberString());
     }
 
     public static TheoryData<string, string> MultipleCharData =>
@@ -270,9 +311,9 @@ public class BankOCRTests
     {
         var account = BankAccountNumber.Parse(text);
 
-        Assert.Equal(expectation, account.AccountNumber);
+        Assert.Equal(expectation, account.ToAccountNumberString());
     }
-    
+
     [Fact]
     public void ShouldParseInvalidCharsAsQuestionMark()
     {
@@ -283,13 +324,13 @@ public class BankOCRTests
                    """;
         var account = BankAccountNumber.Parse(text);
 
-        Assert.Equal("12343678?", account.AccountNumber);
+        Assert.Equal("12343678?", account.ToAccountNumberString());
     }
-    
+
     [Fact]
     public void ShouldValidateAccountNumber()
     {
-        var account = new BankAccountNumber("345882865");
+        var account = new BankAccountNumber(Digit.FromRawString("345882865"));
         var isValid = account.IsValidate();
 
         Assert.True(isValid);
@@ -298,7 +339,7 @@ public class BankOCRTests
     [Fact]
     public void ShouldValidateAccountNumberAndFail()
     {
-        var account = new BankAccountNumber("223456789");
+        var account = new BankAccountNumber(Digit.FromRawString("223456789"));
         var isValid = account.IsValidate();
 
         Assert.False(isValid);
@@ -307,16 +348,32 @@ public class BankOCRTests
     [Fact]
     public void ShouldOutputResultWithErrorIfChecksumDoesNotMatch()
     {
-        var account = new BankAccountNumber("223456789");
-        
+        var account = new BankAccountNumber(Digit.FromRawString("223456789"));
+
         Assert.Equal("223456789 ERR", account.ToResult());
     }
-    
+
     [Fact]
     public void ShouldOutputResultWithInvalidForInvalidChar()
     {
-        var account = new BankAccountNumber("2234?6789");
-        
+        var account = new BankAccountNumber(Digit.FromRawString("2234?6789"));
         Assert.Equal("2234?6789 ILL", account.ToResult());
+    }
+}
+
+public class DigitTests
+{
+    [Fact]
+    public void DigitShouldHavePossibleValues()
+    {
+        var digitString = """
+                            
+                           |
+                           |
+                         """;
+
+        var digit = new Digit(digitString);
+        
+        Assert.True(digit.PossibleValues.SequenceEqual(['1', '7']));
     }
 }
